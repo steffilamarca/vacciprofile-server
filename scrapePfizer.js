@@ -6,7 +6,36 @@ function getRandomBrowser() {
     return browsers[Math.floor(Math.random() * browsers.length)];
 }
 
+async function getNextVaccineId(connection) {
+    try {
+        const [rows] = await connection.query('SELECT MAX(vaccineId) AS maxId FROM vaccines');
+        const maxId = rows[0].maxId || 'VX0000000'; 
+        const nextIdNumber = parseInt(maxId.slice(2)) + 1;
+        const nextId = `VX${String(nextIdNumber).padStart(7, '0')}`;
+        return nextId;
+    } catch (error) {
+        console.error('Error getting next vaccineId:', error);
+        throw error;
+    }
+}
+
+async function insertVaccine(connection, vaccine) {
+    const vaccineId = await getNextVaccineId(connection);
+    try {
+        await connection.query('INSERT INTO vaccines (vaccineId, name, link) VALUES (?, ?, ?)', [vaccineId, vaccine.name, vaccine.link]);
+        console.log(`Inserted vaccine with name ${vaccine.name}`);
+    } catch (error) {
+        if (error.code === 'ER_DUP_ENTRY') {
+            console.error(`Duplicate entry for vaccine name ${vaccine.name}: ${error.message}`);
+        } else {
+            console.error('Error inserting vaccine:', error);
+        }
+    }
+}
+
 async function scrapePfizer() {
+    const connection = await db.getConnection();
+
     try {
         const browserConfig = getRandomBrowser();
         const browser = await puppeteer.launch({ headless: true });
@@ -45,14 +74,20 @@ async function scrapePfizer() {
 
         console.log('Scraping data:', vaccines); 
 
-        await db.query('TRUNCATE TABLE vaccines');
-        const insertPromises = vaccines.map(vaccine => {
-            return db.query('INSERT INTO vaccines (name, link) VALUES (?, ?)', [vaccine.name, vaccine.link]);
-        });
-        await Promise.all(insertPromises);
+        await connection.query('START TRANSACTION');
+        await connection.query('TRUNCATE TABLE vaccines');
+
+        for (const vaccine of vaccines) {
+            await insertVaccine(connection, vaccine);
+        }
+
+        await connection.query('COMMIT');
         console.log('Data scraped and stored successfully.');
     } catch (error) {
         console.error('Error in scrapePfizer:', error);
+        await connection.query('ROLLBACK');
+    } finally {
+        connection.release();
     }
 }
 

@@ -25,9 +25,15 @@ app.get('/api/vaccines', async (req, res) => {
 
 app.listen(port, () => {
     console.log(`Server running at http://localhost:${port}`);
+
+    scrapePfizer().then(() => {
+        console.log('Initial data scraping complete.');
+    }).catch(error => {
+        console.error('Error running initial data scrape:', error);
+    });
 });
 
 cron.schedule('* * * * *', () => {
-    console.log('Running scheduled scraping job...');
+    console.log('Running scheduled scraping jobs...');
     scrapePfizer();
 });
