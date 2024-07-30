@@ -16,13 +16,11 @@ async function scrapePfizer() {
         await page.setUserAgent(browserConfig.userAgent);
         await page.goto('https://www.pfizer.com/products/product-list', { waitUntil: 'networkidle2' });
 
-        // Check if page is loaded
-        const pageContent = await page.content();
         console.log('Page content loaded.');
 
         const vaccines = await page.evaluate(() => {
             const vaccineElements = Array.from(document.querySelectorAll('li.product-list__results-item'));
-            console.log('Found vaccine elements:', vaccineElements.length); // Debugging log
+            console.log('Found vaccine elements:', vaccineElements.length); 
 
             const results = [];
 
@@ -39,13 +37,13 @@ async function scrapePfizer() {
                 }
             }
 
-            console.log('Results:', results); // Debugging log
+            console.log('Results:', results); 
             return results;
         });
 
         await browser.close();
 
-        console.log('Scraping data:', vaccines); // Debugging log
+        console.log('Scraping data:', vaccines); 
 
         await db.query('TRUNCATE TABLE vaccines');
         const insertPromises = vaccines.map(vaccine => {
