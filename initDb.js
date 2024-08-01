@@ -37,9 +37,8 @@ connection.connect(err => {
                         manufacturerId VARCHAR(10) PRIMARY KEY,
                         name VARCHAR(255) NOT NULL,
                         description VARCHAR(255),
-                        information JSON,
+                        details JSON,
                         vaccineList JSON,
-                        vaccineListLink VARCHAR(255)
                     )
                 `;
 
