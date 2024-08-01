@@ -28,17 +28,26 @@ connection.connect(err => {
 
             connection.query('USE vacciProfileDb', (err) => {
                 if (err) {
-                    console.error('Error selecting database:', err);
+                    console.error('Error selecting database (vacciProfileDb):', err);
                     return;
                 }
-                
+
                 const createManufacturersTableSQL = `
                     CREATE TABLE manufacturers (
                         manufacturerId VARCHAR(10) PRIMARY KEY,
                         name VARCHAR(255) NOT NULL,
                         description VARCHAR(255),
-                        details JSON,
-                        vaccineList JSON,
+                        yearFounded INT,
+                        headquarters VARCHAR(255),
+                        ceo VARCHAR(255),
+                        revenue VARCHAR(255),
+                        operatingIncome VARCHAR(255),
+                        netIncome VARCHAR(255),
+                        totalAssets VARCHAR(255),
+                        totalEquity VARCHAR(255),
+                        numberOfEmployees VARCHAR(255),
+                        detailsLink VARCHAR(255),
+                        vaccineListLink VARCHAR(255)
                     )
                 `;
 
@@ -48,24 +57,45 @@ connection.connect(err => {
                         return;
                     }
                     console.log('Manufacturer table created.');
-                    connection.end();
-                });
 
-                const createVaccinesTableSQL = `
-                    CREATE TABLE vaccines (
-                        vaccineId VARCHAR(10) PRIMARY KEY,
-                        name VARCHAR(255) NOT NULL,
-                        link VARCHAR(255) NOT NULL
-                    )
-                `;
+                    const insertManufacturerSQL = `
+                        INSERT INTO manufacturers (manufacturerId, name, detailsLink, vaccineListLink)
+                        VALUES (?, ?, ?, ?)
+                    `;
 
-                connection.query(createVaccinesTableSQL, (err) => {
-                    if (err) {
-                        console.error('Error creating vaccine table:', err);
-                        return;
-                    }
-                    console.log('Vaccine table created.');
-                    connection.end();
+                    const manufacturerData = [
+                        'MN0000001',
+                        'Pfizer',
+                        'https://en.wikipedia.org/wiki/Pfizer',
+                        'https://www.pfizer.com/products/product-list'
+                    ];
+
+                    connection.query(insertManufacturerSQL, manufacturerData, (err) => {
+                        if (err) {
+                            console.error('Error inserting manufacturer record:', err);
+                            return;
+                        }
+                        console.log('Manufacturer record inserted.');
+
+                        const createVaccinesTableSQL = `
+                            CREATE TABLE vaccines (
+                                vaccineId VARCHAR(10) PRIMARY KEY,
+                                manufacturerId VARCHAR(10),
+                                name VARCHAR(255) NOT NULL,
+                                link VARCHAR(255) NOT NULL,
+                                FOREIGN KEY (manufacturerId) REFERENCES manufacturers(manufacturerId)
+                            )
+                        `;
+
+                        connection.query(createVaccinesTableSQL, (err) => {
+                            if (err) {
+                                console.error('Error creating vaccine table:', err);
+                                return;
+                            }
+                            console.log('Vaccine table created.');
+                            connection.end();
+                        });
+                    });
                 });
             });
         });

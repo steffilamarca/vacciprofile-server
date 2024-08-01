@@ -3,6 +3,7 @@ import cors from 'cors';
 import cron from 'node-cron';
 import db from './dbPool.js';
 import scrapePfizerVaccineList from './scrapePfizerVaccineList.js';
+import scrapePfizerDetails from './scrapePfizerDetails.js';
 
 const app = express();
 const port = 5000;
@@ -36,14 +37,21 @@ app.get('/api/manufacturers', async (req, res) => {
 app.listen(port, () => {
     console.log(`Server running at http://localhost:${port}`);
 
-    scrapePfizerVaccineList().then(() => {
-        console.log('Initial Pfizer data scraping complete.');
+    scrapePfizerDetails().then(() => {
+        console.log('Initial Pfizer details scraping complete.');
     }).catch(error => {
-        console.error('Error running Pfizer initial data scrape:', error);
+        console.error('Error running initial Pfizer details scrape:', error);
     });
+    scrapePfizerVaccineList().then(() => {
+        console.log('Initial Pfizer vaccine list scraping complete.');
+    }).catch(error => {
+        console.error('Error running initial Pfizer vaccine list scraping:', error);
+    });
+
 });
 
 cron.schedule('1 * * * *', () => {
     console.log('Running scheduled scraping jobs...');
+    scrapePfizerDetails();
     scrapePfizerVaccineList();
 });

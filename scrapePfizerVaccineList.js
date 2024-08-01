@@ -1,9 +1,22 @@
 import puppeteer from 'puppeteer';
-import db from './dbPool.js'; 
-import browsers from './browsers.js'; 
+import db from './dbPool.js';
+import browsers from './browsers.js';
 
 function getRandomBrowser() {
     return browsers[Math.floor(Math.random() * browsers.length)];
+}
+
+async function getManufacturerId(connection, manufacturerName) {
+    try {
+        const [rows] = await connection.query('SELECT manufacturerId FROM manufacturers WHERE name = ?', [manufacturerName]);
+        if (rows.length === 0) {
+            throw new Error(`Manufacturer with name "${manufacturerName}" not found.`);
+        }
+        return rows[0].manufacturerId;
+    } catch (error) {
+        console.error('Error getting manufacturerId:', error);
+        throw error;
+    }
 }
 
 async function getNextVaccineId(connection) {
@@ -19,10 +32,10 @@ async function getNextVaccineId(connection) {
     }
 }
 
-async function insertVaccine(connection, vaccine) {
+async function insertVaccine(connection, vaccine, manufacturerId) {
     const vaccineId = await getNextVaccineId(connection);
     try {
-        await connection.query('INSERT INTO vaccines (vaccineId, name, link) VALUES (?, ?, ?)', [vaccineId, vaccine.name, vaccine.link]);
+        await connection.query('INSERT INTO vaccines (vaccineId, manufacturerId, name, link) VALUES (?, ?, ?, ?)', [vaccineId, manufacturerId, vaccine.name, vaccine.link]);
         console.log(`Inserted vaccine with name ${vaccine.name}`);
     } catch (error) {
         if (error.code === 'ER_DUP_ENTRY') {
@@ -37,6 +50,9 @@ async function scrapePfizerVaccineList() {
     const connection = await db.getConnection();
 
     try {
+        const manufacturerName = 'Pfizer';
+        const manufacturerId = await getManufacturerId(connection, manufacturerName);
+
         const browserConfig = getRandomBrowser();
         const browser = await puppeteer.launch({ headless: true });
         const page = await browser.newPage();
@@ -76,7 +92,7 @@ async function scrapePfizerVaccineList() {
         await connection.query('TRUNCATE TABLE vaccines');
 
         for (const vaccine of vaccines) {
-            await insertVaccine(connection, vaccine);
+            await insertVaccine(connection, vaccine, manufacturerId);
         }
 
         await connection.query('COMMIT');
