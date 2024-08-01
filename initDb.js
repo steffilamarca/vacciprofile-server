@@ -31,8 +31,28 @@ connection.connect(err => {
                     console.error('Error selecting database:', err);
                     return;
                 }
+                
+                const createManufacturersTableSQL = `
+                    CREATE TABLE manufacturers (
+                        manufacturerId VARCHAR(10) PRIMARY KEY,
+                        name VARCHAR(255) NOT NULL,
+                        description VARCHAR(255),
+                        information JSON,
+                        vaccineList JSON,
+                        vaccineListLink VARCHAR(255)
+                    )
+                `;
 
-                const createTableSQL = `
+                connection.query(createManufacturersTableSQL, (err) => {
+                    if (err) {
+                        console.error('Error creating manufacturer table:', err);
+                        return;
+                    }
+                    console.log('Manufacturer table created.');
+                    connection.end();
+                });
+
+                const createVaccinesTableSQL = `
                     CREATE TABLE vaccines (
                         vaccineId VARCHAR(10) PRIMARY KEY,
                         name VARCHAR(255) NOT NULL,
@@ -40,12 +60,12 @@ connection.connect(err => {
                     )
                 `;
 
-                connection.query(createTableSQL, (err) => {
+                connection.query(createVaccinesTableSQL, (err) => {
                     if (err) {
-                        console.error('Error creating table:', err);
+                        console.error('Error creating vaccine table:', err);
                         return;
                     }
-                    console.log('Table created.');
+                    console.log('Vaccine table created.');
                     connection.end();
                 });
             });

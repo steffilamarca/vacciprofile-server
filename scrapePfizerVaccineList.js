@@ -1,5 +1,5 @@
 import puppeteer from 'puppeteer';
-import db from './db.js'; 
+import db from './dbPool.js'; 
 import browsers from './browsers.js'; 
 
 function getRandomBrowser() {
@@ -33,7 +33,7 @@ async function insertVaccine(connection, vaccine) {
     }
 }
 
-async function scrapePfizer() {
+async function scrapePfizerVaccineList() {
     const connection = await db.getConnection();
 
     try {
@@ -72,8 +72,6 @@ async function scrapePfizer() {
 
         await browser.close();
 
-        console.log('Scraping data:', vaccines); 
-
         await connection.query('START TRANSACTION');
         await connection.query('TRUNCATE TABLE vaccines');
 
@@ -84,11 +82,11 @@ async function scrapePfizer() {
         await connection.query('COMMIT');
         console.log('Data scraped and stored successfully.');
     } catch (error) {
-        console.error('Error in scrapePfizer:', error);
+        console.error('Error in scrapePfizerVaccineList:', error);
         await connection.query('ROLLBACK');
     } finally {
         connection.release();
     }
 }
 
-export default scrapePfizer;
+export default scrapePfizerVaccineList;
